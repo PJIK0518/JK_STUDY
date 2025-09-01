@@ -30,8 +30,6 @@ print('loss :', loss)
 results = model.predict([6])
 print('6의 예측값 : ', results)
 
-
-
 # epochs :  300
 # loss : 0.00018629743135534227
 # 1/1 [==============================] - 0s 66ms/step
