@@ -36,5 +36,3 @@ plt.xlabel("WGHT")
 plt.ylabel("LOSS")
 plt.grid()
 plt.show()
-
-# History 추가
