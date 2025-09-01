@@ -1,0 +1,159 @@
+### 40_2.copy
+
+### [실습]
+#1. 시간 : vs CNN, CPU vs GPU
+#2. 성능 : 기존 모델 능가
+
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, BatchNormalization, MaxPool2D
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.models import Sequential, Model, load_model
+from tensorflow.keras.datasets import fashion_mnist
+
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler, StandardScaler, RobustScaler
+from sklearn.metrics import accuracy_score
+
+import pandas as pd
+import numpy as np
+import time
+
+##########################################################################
+#1. 데이터
+##########################################################################
+(x_trn, y_trn), (x_tst, y_tst) = fashion_mnist.load_data()
+
+# print(x_trn.shape) # (60000, 28, 28)
+# print(x_tst.shape) # (10000, 28, 28)
+# print(y_trn.shape) # (60000,)
+# print(y_tst.shape) # (10000,)
+
+#####################################
+### x reshape 
+x_trn = x_trn.reshape(x_trn.shape[0], x_trn.shape[1]*x_trn.shape[2])
+x_tst = x_tst.reshape(x_tst.shape[0], x_tst.shape[1]*x_tst.shape[2])
+
+print(x_trn.shape, x_tst.shape)
+
+#####################################
+### y OneHot
+y_trn = pd.get_dummies(y_trn)
+y_tst = pd.get_dummies(y_tst)
+
+print(y_trn.shape, y_tst.shape)
+
+#####################################
+### Scaling
+x_trn = (x_trn-127.5)/(510.0)
+x_tst = (x_tst-127.5)/(510.0)
+
+x_trn = np.array(x_trn).reshape(-1,49,16)
+x_tst = np.array(x_tst).reshape(-1,49,16)
+
+##########################################################################
+#2. 모델 구성
+##########################################################################
+### 모델 불러오기
+path = './_save/keras40/fashion/'
+# model = load_model(path + 'k40_0612_1231.h5')
+
+from tensorflow.keras.layers import LSTM
+
+model = Sequential()
+
+model.add(LSTM(10, input_shape=(49,16), activation = 'relu'))
+model.add(Dropout(0.2))
+
+model.add(BatchNormalization())
+model.add(Dense(64, activation = 'relu'))
+model.add(Dropout(0.2))
+
+model.add(BatchNormalization())
+model.add(Dense(32, activation = 'relu'))
+model.add(Dropout(0.2))
+
+model.add(BatchNormalization())
+model.add(Dense(10, activation = 'softmax'))
+
+
+'''
+[CNN_GPU]
+loss : 0.20780806243419647
+acc  : 0.9316999912261963
+acc  : 0.9317
+시간 : 1904.9725253582
+
+[DNN_GPU]
+loss : 0.3334116041660309
+acc  : 0.8885999917984009
+acc  : 0.8886
+시간 : 1643.7009906768799
+
+[DNN_CPU]
+loss : 0.33551329374313354
+acc  : 0.8920999765396118
+acc  : 0.8921
+시간 : 739.784743309021
+
+[LSTM]
+loss : 0.705035388469696
+acc  : 0.7476000189781189
+acc  : 0.7476
+시간 : 813.0245838165283
+
+[Conv1D]
+
+'''
+
+##########################################################################
+#3. 컴파일 훈련
+model.compile(loss = 'categorical_crossentropy',
+              optimizer = 'adam',
+              metrics = ['acc']
+              )
+
+ES = EarlyStopping(monitor = 'val_acc', mode = 'max',
+                   patience= 50, verbose=1,
+                   restore_best_weights=True,
+    
+)
+
+################################# mpc 세이브 파일명 만들기 #################################
+### 월일시 넣기
+import datetime
+
+date = datetime.datetime.now()
+date = date.strftime('%m%d_%H%M')              
+
+### 파일 저장
+filepath = "".join([path,'k40_',date, '.h5'])
+
+MCP = ModelCheckpoint(monitor='val_acc',
+                      mode='auto',
+                      save_best_only=True,
+                      verbose = 1,
+                      filepath= filepath        
+                      )
+
+Start = time.time()
+hist = model.fit(x_trn, y_trn,
+                 epochs = 100,
+                 batch_size = 500,  
+                 verbose =2,
+                 validation_split = 0.2,
+                 callbacks = [ES, MCP])       
+End = time.time()
+
+T = End - Start
+
+#4. 평가,예측
+loss = model.evaluate(x_tst, y_tst,
+                      verbose= 1)
+results = model.predict(x_tst)
+results = np.argmax(results, axis=1)
+y_tst = np.argmax(y_tst.values, axis=1)
+ACC = accuracy_score(results, y_tst)
+
+print('ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ')
+print("loss :", loss[0])
+print("acc  :", loss[1])
+print("acc  :", ACC)
+print("시간 :", T)
