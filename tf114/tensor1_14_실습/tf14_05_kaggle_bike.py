@@ -52,3 +52,5 @@ from sklearn.metrics import r2_score, mean_squared_error
 print('R2S :', r2_score(y_data, y_prd))
 print('MSE :', mean_squared_error(y_data, y_prd))
 
+# R2S : 0.03503041833074305
+# MSE : 31660.940390692795
