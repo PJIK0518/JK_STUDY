@@ -52,3 +52,6 @@ from sklearn.metrics import r2_score, mean_absolute_error
 
 print('R2S :', r2_score(y_data, y_pred))
 print('MAE :', mean_absolute_error(y_data, y_pred))
+
+R2S : 0.9995323025543879
+MAE : 0.3798646092414856
